@@ -11,6 +11,7 @@ cycler==0.12.1
 Cython==3.0.10
 easydict==1.13
 Flask==3.0.3
+Flask-Cors==4.0.1
 flatbuffers==24.3.25
 fonttools==4.52.1
 h11==0.14.0

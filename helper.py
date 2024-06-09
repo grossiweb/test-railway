@@ -182,12 +182,12 @@ def name_plate(input_image: Image, name: str, gender: str, number: int) -> Image
     base_width, base_height = base_image.size
     plate = Image.open(io.BytesIO(screenshot))
     
-    _, plate_height = plate.size
+    plate_width, plate_height = plate.size
     
-    watermark = plate.resize((base_width, int(base_height/10) + 10)).convert("RGBA")
+    watermark = plate.resize((base_width-24, int(base_height/10)-5)).convert("RGBA")
     
     recreation = Image.new('RGBA', (base_width, base_height))
     recreation.paste(base_image, (0,0))
-    recreation.paste(watermark, (0, int(base_height-(plate_height/1.3))), mask=watermark)
+    recreation.paste(watermark, (12, int(base_height-(plate_height/1.3))), mask=watermark)
     
     return recreation

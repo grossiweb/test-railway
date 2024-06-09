@@ -8,6 +8,7 @@ from insightface.app import FaceAnalysis
 import numpy as np
 import cv2
 from helper import logo_watermark, name_plate
+from flask_cors import CORS
 
 if not os.path.exists('models/inswapper_128.onnx'):
     download_inswapper_model()
@@ -16,6 +17,7 @@ facedetection = FaceAnalysis(name='buffalo_l', root="./")
 facedetection.prepare(ctx_id=1, det_size=(640, 640))
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route('/faceswap', methods=['POST'])
 def faceswap():
