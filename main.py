@@ -9,6 +9,7 @@ import numpy as np
 import cv2
 from helper import logo_watermark, name_plate
 from flask_cors import CORS
+from MongoDBConnection import DBConnection
 
 if not os.path.exists('models/inswapper_128.onnx'):
     download_inswapper_model()
@@ -18,6 +19,8 @@ facedetection.prepare(ctx_id=1, det_size=(640, 640))
 
 app = Flask(__name__)
 CORS(app)
+
+dbClient = DBConnection(db="Names",collection="NameCount")
 
 @app.route('/faceswap', methods=['POST'])
 def faceswap():
@@ -31,7 +34,7 @@ def faceswap():
     source_img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
     
     # CHANGE DESTINATION IMAGE BASED ON STYLE AND LEVEL
-    dest_img = cv2.imread("destination images/test.png")
+    dest_img = cv2.imread("destination images/test2.png")
 
     swapper = insightface.model_zoo.get_model('models/inswapper_128.onnx', download=False, download_zip=False)
 
@@ -54,9 +57,20 @@ def faceswap():
 
     #############################################################################################################
 
+    # Los-Angelos Logo Logic
     res = logo_watermark(res)
-    res = name_plate(input_image=res, name=name, gender=gender, number=3549)
     
+    # Name Plate Number Logic
+    findPerson = dbClient.get_name_data(name=name)
+    
+    if(len(findPerson) < 1):
+        plateNumber = 1
+    else:
+        plateNumber = findPerson[0]["count"] + 1
+    
+    res = name_plate(input_image=res, name=name, gender=gender, number=plateNumber)
+    
+    # Returning Image Logic
     img_byte_array = io.BytesIO()
     res.save(img_byte_array, format='PNG')
     img_byte_array.seek(0)
