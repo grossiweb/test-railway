@@ -8,5 +8,5 @@ class DBConnection:
         self.__db = self.__client[db]
         self.__collection = self.__db[collection]
         
-    def get_name_data(self, name):
+    def get_name_data(self, name: str):
         return list(self.__collection.find({"name": name}))

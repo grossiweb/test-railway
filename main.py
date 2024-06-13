@@ -15,7 +15,7 @@ if not os.path.exists('models/inswapper_128.onnx'):
     download_inswapper_model()
 
 facedetection = FaceAnalysis(name='buffalo_l', root="./")
-facedetection.prepare(ctx_id=1, det_size=(640, 640))
+facedetection.prepare(ctx_id=1)
 
 app = Flask(__name__)
 CORS(app)
@@ -33,15 +33,16 @@ def faceswap():
     np_img = np.frombuffer(file.read(), np.uint8)
     source_img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
     
+    cv2.imwrite("source.png", source_img)
+    
     # CHANGE DESTINATION IMAGE BASED ON STYLE AND LEVEL
-    dest_img = cv2.imread("destination images/test2.png")
-
-    swapper = insightface.model_zoo.get_model('models/inswapper_128.onnx', download=False, download_zip=False)
+    dest_img = cv2.imread(f"destination images/WSPA004.jpg")
+    # dest_img = cv2.imread(f"destination images/{style}")
 
     ##############################################################################################################
     s_faces = facedetection.get(source_img)
     if len(s_faces) < 1:
-        return Response({"error" : "No Face Detected in Source Image"}, status=404)
+        return jsonify({"message": "No Face Detected in Source Image"}), 404
 
     d_faces = facedetection.get(dest_img)
 
@@ -51,7 +52,7 @@ def faceswap():
     dest_face = d_faces[0]
 
     #############################################################################################################
-
+    swapper = insightface.model_zoo.get_model('models/inswapper_128.onnx', download=False, download_zip=False)
     res = dest_img.copy()
     res = swapper.get(res, dest_face, source_face, paste_back=True)
 
@@ -69,6 +70,11 @@ def faceswap():
         plateNumber = findPerson[0]["count"] + 1
     
     res = name_plate(input_image=res, name=name, gender=gender, number=plateNumber)
+    
+    # array = res.astype('uint8')
+    # array = array[:, :, [2, 1, 0]]
+    
+    # res = Image.fromarray(array)
     
     # Returning Image Logic
     img_byte_array = io.BytesIO()

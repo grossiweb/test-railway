@@ -29,24 +29,24 @@ def logo_watermark(input_image: np.array, position=(30,30)):
     
     return recreation
 
-def NumToRoman(number):
-    num = [1, 4, 5, 9, 10, 40, 50, 90,
-        100, 400, 500, 900, 1000]
-    sym = ["I", "IV", "V", "IX", "X", "XL",
-        "L", "XC", "C", "CD", "D", "CM", "M"]
-    i = 12
-    
-    ans = ""
-     
-    while number:
-        div = number // num[i]
-        number %= num[i]
- 
-        while div:
-            ans += sym[i]
-            div -= 1
-        i -= 1
-    return ans
+def NumToRoman(num):
+    # Define the mapping of numbers to Roman numerals
+    roman_map = [
+        (1000, 'M'), (900, 'CM'), (500, 'D'), (400, 'CD'),
+        (100, 'C'), (90, 'XC'), (50, 'L'), (40, 'XL'),
+        (10, 'X'), (9, 'IX'), (5, 'V'), (4, 'IV'),
+        (1, 'I')
+    ]
+
+    result = ''
+
+    for value, symbol in roman_map:
+        # Append the symbol to the result while the value can be subtracted from num
+        while num >= value:
+            result += symbol
+            num -= value
+
+    return result
 
 def name_watermark(input_image: Image):
     img = input_image
@@ -139,8 +139,8 @@ def name_plate(input_image: Image, name: str, gender: str, number: int) -> Image
             font-weight: 100;
             font-size: xx-large;
             text-transform: uppercase;
-            text-shadow: 1px 1px 1px rgba(89, 71, 58, 0.8),
-            -1px -1px 1px rgba(0, 0, 0, 0.6), 1px -1px 1px rgba(89, 71, 58, 0.8),
+            text-shadow: 1px 1px 1px rgba(138, 112, 92, 0.8),
+            -1px -1px 1px rgba(0, 0, 0, 0.6), 1px -1px 1px rgba(138, 112, 92, 0.8),
             -1px 1px 1px rgba(0, 0, 0, 0.6);
             padding-left: 5px;
         }}
@@ -184,10 +184,10 @@ def name_plate(input_image: Image, name: str, gender: str, number: int) -> Image
     
     plate_width, plate_height = plate.size
     
-    watermark = plate.resize((base_width-24, int(base_height/10)-5)).convert("RGBA")
+    watermark = plate.resize((base_width-24, int(base_height/9)+10)).convert("RGBA")
     
     recreation = Image.new('RGBA', (base_width, base_height))
     recreation.paste(base_image, (0,0))
-    recreation.paste(watermark, (12, int(base_height-(plate_height/1.3))), mask=watermark)
+    recreation.paste(watermark, (12, int(base_height-(plate_height/1.2))), mask=watermark)
     
     return recreation
