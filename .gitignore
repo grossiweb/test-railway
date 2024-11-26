@@ -162,3 +162,4 @@ cython_debug/
 # Directories
 
 /models
+/gfpgan

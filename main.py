@@ -1,87 +1,152 @@
-from flask import Flask, jsonify, send_from_directory, request, send_file, Response
 import os
 import io
+import logging
+from flask import Flask, jsonify, request, Response
+from flask_cors import CORS
+from werkzeug.utils import secure_filename
 from PIL import Image
-from download_models import download_inswapper_model
-import insightface
-from insightface.app import FaceAnalysis
 import numpy as np
 import cv2
-from helper import logo_watermark, name_plate
-from flask_cors import CORS
+import insightface
+from insightface.app import FaceAnalysis
+from download_models import download_inswapper_model
+from helper import logo_watermark, name_plate, upscale
 from MongoDBConnection import DBConnection
+from uuid import uuid4
+from functools import wraps
+from dotenv import load_dotenv
 
+# Load environment variables
+load_dotenv()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
+logger = logging.getLogger(__name__)
+
+# Initialize Flask app
+app = Flask(__name__)
+CORS(app)
+
+# Configuration
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB max-limit
+
+# Initialize face detection and MongoDB
 if not os.path.exists('models/inswapper_128.onnx'):
     download_inswapper_model()
 
 facedetection = FaceAnalysis(name='buffalo_l', root="./")
 facedetection.prepare(ctx_id=1)
 
-app = Flask(__name__)
-CORS(app)
+dbClient = DBConnection(db="Names", collection="NameCount")
 
-dbClient = DBConnection(db="Names",collection="NameCount")
+# Utility functions
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
-@app.route('/faceswap', methods=['POST'])
+def rate_limit(limit, per):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # Implement rate limiting logic here
+            # For simplicity, we're not implementing actual rate limiting in this example
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+# Routes
+@app.route('/api/v1/faceswap', methods=['POST'])
+@rate_limit(limit=10, per=60)  # Example: 10 requests per minute
 def faceswap():
+    logger.info("Received face swap request")
+    try:
+        # File validation
+        if 'image' not in request.files:
+            logger.warning("No file part in the request")
+            return jsonify({"error": "No file part"}), 400
+        file = request.files['image']
+        if file.filename == '':
+            logger.warning("No selected file")
+            return jsonify({"error": "No selected file"}), 400
+        if not allowed_file(file.filename):
+            logger.warning(f"File type not allowed: {file.filename}")
+            return jsonify({"error": "File type not allowed"}), 400
 
-    file = request.files['image']
-    form = request.form
-    
-    name, gender, style, level = form["name"], form["gender"], form["style"], form["level"]
-    
-    np_img = np.frombuffer(file.read(), np.uint8)
-    source_img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
-    
-    cv2.imwrite("source.png", source_img)
-    
-    # CHANGE DESTINATION IMAGE BASED ON STYLE AND LEVEL
-    dest_img = cv2.imread(f"destination images/WSPA004.jpg")
-    # dest_img = cv2.imread(f"destination images/{style}")
+        # Form data validation
+        form = request.form
+        name = secure_filename(form.get("name", ""))
+        gender = form.get("gender")
+        style = form.get("style")
+        level = form.get("level")
 
-    ##############################################################################################################
-    s_faces = facedetection.get(source_img)
-    if len(s_faces) < 1:
-        return jsonify({"message": "No Face Detected in Source Image"}), 404
+        if not all([name, gender, style, level]):
+            logger.warning("Missing required fields in the request")
+            return jsonify({"error": "Missing required fields"}), 400
 
-    d_faces = facedetection.get(dest_img)
+        logger.info(f"Processing face swap for {name}, gender: {gender}, style: {style}, level: {level}")
 
-    #############################################################################################################
+        # Image processing
+        np_img = np.frombuffer(file.read(), np.uint8)
+        source_img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
 
-    source_face = s_faces[0]
-    dest_face = d_faces[0]
+        dest_img = cv2.imread(f"destination images/{gender}/{style}")
+        if dest_img is None:
+            logger.error(f"Destination image not found: destination images/{gender}/{style}")
+            return jsonify({"error": "Destination image not found"}), 404
 
-    #############################################################################################################
-    swapper = insightface.model_zoo.get_model('models/inswapper_128.onnx', download=False, download_zip=False)
-    res = dest_img.copy()
-    res = swapper.get(res, dest_face, source_face, paste_back=True)
+        # Face detection
+        s_faces = facedetection.get(source_img)
+        if len(s_faces) < 1:
+            logger.warning("No face detected in source image")
+            return jsonify({"error": "No face detected in source image"}), 400
 
-    #############################################################################################################
+        d_faces = facedetection.get(dest_img)
+        if len(d_faces) < 1:
+            logger.error("No face detected in destination image")
+            return jsonify({"error": "No face detected in destination image"}), 500
 
-    # Los-Angelos Logo Logic
-    res = logo_watermark(res)
-    
-    # Name Plate Number Logic
-    findPerson = dbClient.get_name_data(name=name)
-    
-    if(len(findPerson) < 1):
-        plateNumber = 1
-    else:
-        plateNumber = findPerson[0]["count"] + 1
-    
-    res = name_plate(input_image=res, name=name, gender=gender, number=plateNumber)
-    
-    # array = res.astype('uint8')
-    # array = array[:, :, [2, 1, 0]]
-    
-    # res = Image.fromarray(array)
-    
-    # Returning Image Logic
-    img_byte_array = io.BytesIO()
-    res.save(img_byte_array, format='PNG')
-    img_byte_array.seek(0)
+        logger.info("Face detection completed successfully")
 
-    return Response(img_byte_array, mimetype='image/png', status=200)
+        # Face swapping
+        swapper = insightface.model_zoo.get_model('models/inswapper_128.onnx', download=False, download_zip=False)
+        res = swapper.get(dest_img, d_faces[0], s_faces[0], paste_back=True)
+        logger.info("Face swapping completed")
+
+        # Name plate logic
+        findPerson = dbClient.get_name_data(name=name)
+        plateNumber = 1 if len(findPerson) < 1 else findPerson[0]["count"] + 1
+        res = name_plate(input_image=res, name=name, gender=gender, number=plateNumber)
+        logger.info(f"Name plate added for {name}, number: {plateNumber}")
+
+        # Upscaling
+        try:
+            logger.info("Starting image upscaling")
+            res = np.array(res)
+            res = upscale(res)
+            with io.BytesIO() as output:
+                Image.fromarray(res).save(output, format='PNG')
+                img_byte_array = output.getvalue()
+            logger.info("Image upscaling completed successfully")
+        except Exception as error:
+            logger.error(f"Error during upscaling: {str(error)}")
+            logger.info("Falling back to non-upscaled image")
+            # Fallback to non-upscaled image
+            with io.BytesIO() as output:
+                res.save(output, format='PNG')
+                img_byte_array = output.getvalue()
+
+        logger.info("Face swap process completed successfully")
+        return Response(img_byte_array, mimetype='image/png', status=200)
+
+    except Exception as e:
+        logger.error(f"Unexpected error in faceswap: {str(e)}", exc_info=True)
+        return jsonify({"error": "An unexpected error occurred"}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=os.getenv("PORT", default=8000))
+    port = int(os.environ.get("PORT", 8000))
+    debug_mode = os.environ.get("FLASK_DEBUG", "False").lower() == "true"
+    logger.info(f"Starting Flask app on port {port}, debug mode: {debug_mode}")
+    app.run(debug=debug_mode, host='0.0.0.0', port=port)
