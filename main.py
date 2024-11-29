@@ -3,7 +3,6 @@ import io
 import logging
 from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
-from werkzeug.utils import secure_filename
 from PIL import Image
 import numpy as np
 import cv2
@@ -27,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)
+CORS(app, expose_headers=['X-Plate-Number', 'X-Plate-Name'])
 
 # Configuration
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -77,7 +76,7 @@ def faceswap():
 
         # Form data validation
         form = request.form
-        name = secure_filename(form.get("name", ""))
+        name = form.get("name")
         gender = form.get("gender")
         style = form.get("style")
         level = form.get("level")
@@ -85,6 +84,9 @@ def faceswap():
         if not all([name, gender, style, level]):
             logger.warning("Missing required fields in the request")
             return jsonify({"error": "Missing required fields"}), 400
+
+        plateName = name[0].upper() + name.lower()[1:]
+        plateGender = gender[0].upper() + gender.lower()[1:]
 
         logger.info(f"Processing face swap for {name}, gender: {gender}, style: {style}, level: {level}")
 
@@ -139,7 +141,19 @@ def faceswap():
                 img_byte_array = output.getvalue()
 
         logger.info("Face swap process completed successfully")
-        return Response(img_byte_array, mimetype='image/png', status=200)
+        headers={
+            'Content-Type': 'image/png',
+            'X-Plate-Number': plateNumber,
+            'X-Plate-Name': f"{plateName}'{plateGender} {plateNumber}",
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Expose-Headers': 'X-Plate-Number, X-Plate-Name'
+        }
+        return Response(
+            img_byte_array,
+            mimetype='image/png',
+            status=200,
+            headers=headers
+        )
 
     except Exception as e:
         logger.error(f"Unexpected error in faceswap: {str(e)}", exc_info=True)
