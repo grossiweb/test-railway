@@ -43,23 +43,28 @@ def logo_watermark(input_image: np.array, position=(30,30)):
     return recreation
 
 def NumToRoman(num):
-    # Define the mapping of numbers to Roman numerals
-    roman_map = [
-        (1000, 'M'), (900, 'CM'), (500, 'D'), (400, 'CD'),
-        (100, 'C'), (90, 'XC'), (50, 'L'), (40, 'XL'),
-        (10, 'X'), (9, 'IX'), (5, 'V'), (4, 'IV'),
-        (1, 'I')
-    ]
+    romanMap = { 
+        1000: "M", 900: "CM", 500: "D", 400: "CD", 100: "C",
+        90: "XC", 50: "L", 40: "XL", 10: "X", 9: "IX", 8: "VIII",
+        7: "VII", 6: "VI", 5: "V", 4: "IV", 3: "III", 2: "II", 1: "I"
+    }
+        
+    keys = list(romanMap.keys())
 
-    result = ''
+    i = 0
+    dig = []
+    res = ""
+    while num > 0:
+        x = num - keys[i]
+        if x < 0:
+            i += 1
+        else:
+            num = x
+            dig.append(keys[i])
 
-    for value, symbol in roman_map:
-        # Append the symbol to the result while the value can be subtracted from num
-        while num >= value:
-            result += symbol
-            num -= value
-
-    return result
+    for i in dig:
+        res += romanMap[i]
+    return res
 
 def name_watermark(input_image: Image):
     img = input_image

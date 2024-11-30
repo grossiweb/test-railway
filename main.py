@@ -14,6 +14,7 @@ from MongoDBConnection import DBConnection
 from uuid import uuid4
 from functools import wraps
 from dotenv import load_dotenv
+from helper import NumToRoman
 
 # Load environment variables
 load_dotenv()
@@ -118,7 +119,7 @@ def faceswap():
         logger.info("Face swapping completed")
 
         # Name plate logic
-        findPerson = dbClient.get_name_data(name=name)
+        findPerson = dbClient.get_name_data(name=f"{name.lower()}'{gender.lower()}")
         plateNumber = 1 if len(findPerson) < 1 else findPerson[0]["count"] + 1
         res = name_plate(input_image=res, name=name, gender=gender, number=plateNumber)
         logger.info(f"Name plate added for {name}, number: {plateNumber}")
@@ -143,8 +144,8 @@ def faceswap():
         logger.info("Face swap process completed successfully")
         headers={
             'Content-Type': 'image/png',
-            'X-Plate-Number': plateNumber,
-            'X-Plate-Name': f"{plateName}'{plateGender} {plateNumber}",
+            'X-Plate-Number': NumToRoman(plateNumber),
+            'X-Plate-Name': f"{plateName}'{plateGender} {NumToRoman(plateNumber)}",
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Expose-Headers': 'X-Plate-Number, X-Plate-Name'
         }
