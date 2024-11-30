@@ -59,7 +59,7 @@ def rate_limit(limit, per):
 
 # Routes
 @app.route('/api/v1/faceswap', methods=['POST'])
-@rate_limit(limit=10, per=60)  # Example: 10 requests per minute
+@rate_limit(limit=10, per=600)  # Example: 10 requests per minute
 def faceswap():
     logger.info("Received face swap request")
     try:
