@@ -15,6 +15,8 @@ from uuid import uuid4
 from functools import wraps
 from dotenv import load_dotenv
 from helper import NumToRoman
+import requests
+from S3Service import S3Service
 
 # Load environment variables
 load_dotenv()
@@ -86,6 +88,8 @@ def faceswap():
             logger.warning("Missing required fields in the request")
             return jsonify({"error": "Missing required fields"}), 400
 
+        [_, _, style_category, style_filename] = style.split("/")
+
         plateName = name[0].upper() + name.lower()[1:]
         plateGender = gender[0].upper() + gender.lower()[1:]
 
@@ -95,7 +99,17 @@ def faceswap():
         np_img = np.frombuffer(file.read(), np.uint8)
         source_img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
 
-        dest_img = cv2.imread(f"destination images/{gender}/{style}")
+        s3_service = S3Service()
+        style_image_url = s3_service.get_specific_style(
+            gender,
+            category=style_category,
+            filename=style_filename
+        )
+        
+        style_image_response = requests.get(style_image_url)
+        style_image_data = style_image_response.content
+        image_array = np.asarray(bytearray(style_image_data), dtype=np.uint8)
+        dest_img = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
         if dest_img is None:
             logger.error(f"Destination image not found: destination images/{gender}/{style}")
             return jsonify({"error": "Destination image not found"}), 404
