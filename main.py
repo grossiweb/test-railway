@@ -29,7 +29,18 @@ logger = logging.getLogger(__name__)
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app, expose_headers=['X-Plate-Number', 'X-Plate-Name'])
+CORS(app, resources={
+    r"/*": {
+        "origins": [
+            "http://localhost:3000",  # Development
+            # "https://your-production-domain.com",  # Add your production domain
+        ],
+        "methods": ["POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"],
+        "expose_headers": ["X-Plate-Number", "X-Plate-Name"],
+        "supports_credentials": True
+    }
+})
 
 # Configuration
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -156,11 +167,12 @@ def faceswap():
                 img_byte_array = output.getvalue()
 
         logger.info("Face swap process completed successfully")
-        headers={
+        headers = {
             'Content-Type': 'image/png',
             'X-Plate-Number': NumToRoman(plateNumber),
             'X-Plate-Name': f"{plateName}'{plateGender} {NumToRoman(plateNumber)}",
-            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Origin': request.headers.get('Origin', '*'),
+            'Access-Control-Allow-Credentials': 'true',
             'Access-Control-Expose-Headers': 'X-Plate-Number, X-Plate-Name'
         }
         return Response(
