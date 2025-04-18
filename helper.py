@@ -15,6 +15,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
+import torch
 
 from torchvision.transforms import functional
 sys.modules["torchvision.transforms.functional_tensor"] = functional
@@ -22,6 +23,16 @@ sys.modules["torchvision.transforms.functional_tensor"] = functional
 from basicsr.archs.srvgg_arch import SRVGGNetCompact
 from gfpgan.utils import GFPGANer
 from realesrgan.utils import RealESRGANer
+
+if torch.backends.mps.is_available():
+    device = torch.device("mps")
+    print ("MPS device found.")
+elif torch.cuda.is_available():
+    device = torch.device("cuda")
+    print ("CUDA device found.")
+else:
+    device = torch.device("cpu")
+    print ("Using CPU.")
 
 def logo_watermark(input_image: np.array, position=(30,30)):
     
@@ -274,10 +285,17 @@ def name_plate(input_image: np.array, name: str, gender: str, number: int) -> Im
         raise
 
 def upscale(img: np.array):
-    
-    model = SRVGGNetCompact(num_in_ch=3, num_out_ch=3, num_feat=64, num_conv=32, upscale=4, act_type='prelu')
+
+    model = SRVGGNetCompact(
+        num_in_ch=3, 
+        num_out_ch=3, 
+        num_feat=64, 
+        num_conv=32, 
+        upscale=4, 
+        act_type='prelu'
+    ).to(device)
     model_path = './models/realesr-general-x4v3.pth'
-    upsampler = RealESRGANer(scale=4, model_path=model_path, model=model, tile=0, tile_pad=10, pre_pad=0, half=False)
+    upsampler = RealESRGANer(scale=4, model_path=model_path, model=model, tile=0, tile_pad=10, pre_pad=0, half=False, device=device)
 
     try:
         
