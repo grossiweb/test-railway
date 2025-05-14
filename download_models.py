@@ -2,18 +2,17 @@ import os
 import requests
 
 models = [
-    ("models/inswapper_128.onnx", "https://github.com/grossiweb/Models/releases/download/inswapper_128/inswapper_128.onnx"),
-    # ("models/GFPGANv1.3.pth", ""),
+    ("models/inswapper_128.onnx", "https://huggingface.co/MayankTamakuwala/backend_models/resolve/main/inswapper_128.onnx"),
+    ("models/GFPGANv1.3.pth", "https://huggingface.co/MayankTamakuwala/backend_models/resolve/main/GFPGANv1.3.pth"),
     ("models/realesr-general-x4v3.pth", "https://huggingface.co/MayankTamakuwala/backend_models/resolve/main/realesr-general-x4v3.pth"),
     ("models/buffalo_l/1k3d68.onnx", "https://huggingface.co/MayankTamakuwala/backend_models/resolve/main/1k3d68.onnx"),
     ("models/buffalo_l/2d106det.onnx", "https://huggingface.co/MayankTamakuwala/backend_models/resolve/main/2d106det.onnx"),
     ("models/buffalo_l/det_10g.onnx", "https://huggingface.co/MayankTamakuwala/backend_models/resolve/main/det_10g.onnx"),
     ("models/buffalo_l/genderage.onnx", "https://huggingface.co/MayankTamakuwala/backend_models/resolve/main/genderage.onnx"),
-    # ("models/buffalo_l/w600k_r50.onnx", ""),
-    # ("gfpgan/weights/detection_Resnet50_Final.pth", ""),
-    # ("gfpgan/weights/parsing_parsenet.pth", ""),
+    ("models/buffalo_l/w600k_r50.onnx", "https://huggingface.co/MayankTamakuwala/backend_models/resolve/main/w600k_r50.onnx"),
+    ("gfpgan/weights/detection_Resnet50_Final.pth", "https://huggingface.co/MayankTamakuwala/backend_models/resolve/main/detection_Resnet50_Final.pth"),
+    ("gfpgan/weights/parsing_parsenet.pth", "https://huggingface.co/MayankTamakuwala/backend_models/resolve/main/parsing_parsenet.pth"),
 ]
-
 def download_related_models():
     for local_filename, url in models:
 
