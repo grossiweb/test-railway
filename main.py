@@ -11,7 +11,7 @@ from insightface.app import FaceAnalysis
 from download_models import download_inswapper_model
 from helper import logo_watermark, name_plate, upscale
 from MongoDBConnection import DBConnection
-from uuid import uuid4
+# from uuid import uuid4
 from functools import wraps
 from dotenv import load_dotenv
 from helper import NumToRoman
@@ -186,6 +186,9 @@ def faceswap():
         logger.error(f"Unexpected error in faceswap: {str(e)}", exc_info=True)
         return jsonify({"error": "An unexpected error occurred"}), 500
 
+@app.route('/api/v1', methods=['GET'])
+def hello_test():
+    return jsonify(message="Hello, World! This is API V1.")
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8000))
     debug_mode = os.environ.get("FLASK_DEBUG", "False").lower() == "true"
