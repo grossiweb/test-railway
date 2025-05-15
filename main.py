@@ -8,7 +8,6 @@ import numpy as np
 import cv2
 import insightface
 from insightface.app import FaceAnalysis
-from download_models import download_inswapper_model
 from helper import logo_watermark, name_plate, upscale
 from MongoDBConnection import DBConnection
 # from uuid import uuid4
@@ -46,10 +45,6 @@ CORS(app, resources={
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB max-limit
-
-# Initialize face detection and MongoDB
-if not os.path.exists('models/inswapper_128.onnx'):
-    download_inswapper_model()
 
 facedetection = FaceAnalysis(name='buffalo_l', root="./")
 facedetection.prepare(ctx_id=1)
@@ -194,4 +189,4 @@ if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8000))
     debug_mode = os.environ.get("FLASK_DEBUG", "False").lower() == "true"
     logger.info(f"Starting Flask app on port {port}, debug mode: {debug_mode}")
-    app.run(debug=debug_mode, host='127.0.0.1', port=port)
+    app.run(debug=debug_mode, host='0.0.0.0', port=port)
