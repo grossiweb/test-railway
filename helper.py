@@ -7,6 +7,7 @@ import base64
 import time
 import io
 import sys
+import logging
 
 # Selenium Imports
 from selenium import webdriver
@@ -23,6 +24,11 @@ sys.modules["torchvision.transforms.functional_tensor"] = functional
 from basicsr.archs.srvgg_arch import SRVGGNetCompact
 from gfpgan.utils import GFPGANer
 from realesrgan.utils import RealESRGANer
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
+logger = logging.getLogger(__name__)
 
 def logo_watermark(input_image: np.array, position=(30,30)):
     
