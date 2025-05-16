@@ -147,6 +147,8 @@ def name_plate(input_image: np.array, name: str, gender: str, number: int) -> Im
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=options)
         driver.set_page_load_timeout(10)
+        with open("futura_base64.txt", "r") as f:
+            futura_base64 = f.read()
         
         html_content = f'''
             <!DOCTYPE html>
@@ -155,6 +157,12 @@ def name_plate(input_image: np.array, name: str, gender: str, number: int) -> Im
                 <meta charset="UTF-8" />
                 <title>Design Example</title>
                 <style>
+                @font-face {{
+                    font-family: 'FuturaCustom';
+                    src: url(data:font/ttf;base64,{futura_base64}) format('truetype');
+                    font-weight: normal;
+                    font-style: normal;
+                }}
                 
                 body{{
                     padding:0;
@@ -163,25 +171,26 @@ def name_plate(input_image: np.array, name: str, gender: str, number: int) -> Im
                 
                 .background-image {{
                     position: absolute;
-                    min-width: 600px;
-                    background: url(data:image/png;base64,{get_base64_image("./misc images//plate base.png")}) no-repeat center;
+                    width: 600px;
+                    height: 85px;
+                    background: url(data:image/png;base64,{get_base64_image("./misc images/plate base.png")}) no-repeat center;
                     background-size: contain;
                 }}
 
                 .entity-bg {{
-                    background: url(data:image/png;base64,{get_base64_image("./misc images//bg.png")}) no-repeat center;
+                    background: url(data:image/png;base64,{get_base64_image("./misc images/bg.png")}) no-repeat center;
                     background-size: cover;
-                    width: fit-content;
+                    display: inline-block;
                 }}
 
                 .number {{
-                    width: 100%;
-                    justify-content: flex-end;
-                    display: flex;
+                    position: absolute;
+                    bottom: 0;
+                    right: 0;
                 }}
 
                 .embossed-text {{
-                    font-family: "futura";
+                    font-family: 'FuturaCustom', 'Arial';
                     letter-spacing: 0.1em;
                     color: transparent;
                     font-weight: 100;
