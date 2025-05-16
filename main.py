@@ -90,6 +90,8 @@ def faceswap():
         style = form.get("style")
         level = form.get("level")
 
+        logger.info(f"Date before unpacking: 'name: {name}, gender: {gender}, style: {style}, level: {level}'")
+
         if not all([name, gender, style, level]):
             logger.warning("Missing required fields in the request")
             return jsonify({"error": "Missing required fields"}), 400
