@@ -24,16 +24,6 @@ from basicsr.archs.srvgg_arch import SRVGGNetCompact
 from gfpgan.utils import GFPGANer
 from realesrgan.utils import RealESRGANer
 
-if torch.backends.mps.is_available():
-    device = torch.device("mps")
-    print ("MPS device found.")
-elif torch.cuda.is_available():
-    device = torch.device("cuda")
-    print ("CUDA device found.")
-else:
-    device = torch.device("cpu")
-    print ("Using CPU.")
-
 def logo_watermark(input_image: np.array, position=(30,30)):
     
     file_name = uuid4()
@@ -151,6 +141,7 @@ def name_plate(input_image: np.array, name: str, gender: str, number: int) -> Im
     # Increase width to 640px to accommodate borders
     options.add_argument('--window-size=640,85')
     options.add_argument('--high-dpi-support=1')
+    options.binary_location = "/usr/bin/google-chrome"
 
     try:
         service = Service(ChromeDriverManager().install())
@@ -285,6 +276,12 @@ def name_plate(input_image: np.array, name: str, gender: str, number: int) -> Im
         raise
 
 def upscale(img: np.array):
+    if torch.backends.mps.is_available():
+        device = torch.device("mps")
+    elif torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
 
     model = SRVGGNetCompact(
         num_in_ch=3, 
